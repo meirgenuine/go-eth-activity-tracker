@@ -25,6 +25,7 @@ func main() {
 	}
 
 	topAddresses := tracker.GetTopAddresses(5)
+	log.Println("Top 5 active addresses for last 100 blocks:")
 	for i, address := range topAddresses {
 		log.Printf("%d. Address: %s, Activity: %d\n", i+1, address.Address, address.Activity)
 	}
