@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"go-eth-activity-tracker/internal/model"
 	"io"
-	"log"
 	"math/big"
 	"net/http"
 	"sync"
@@ -37,7 +36,6 @@ func (c *Client) Stop() {
 }
 
 func (c *Client) GetLatestBlocks(count int) ([]model.Block, error) {
-	log.Println("Retrieving latest 100 blocks...")
 	latestBlockNumber, err := c.getLatestBlockNumber()
 	if err != nil {
 		return nil, err

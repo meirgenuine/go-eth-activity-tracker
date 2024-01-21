@@ -1,10 +1,16 @@
 package main
 
 import (
+	"fmt"
 	"go-eth-activity-tracker/internal/activity"
 	"go-eth-activity-tracker/internal/ethclient"
 	"log"
 	"os"
+)
+
+const (
+	blocksCount = 100
+	topCount    = 5
 )
 
 func main() {
@@ -15,19 +21,21 @@ func main() {
 
 	client := ethclient.NewClient(accessToken)
 	defer client.Stop() // to release ticker
-	blocks, err := client.GetLatestBlocks(100)
+	log.Printf("Retrieving latest %d blocks...\n", blocksCount)
+	blocks, err := client.GetLatestBlocks(blocksCount)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	log.Println("Calculating activity metrics...")
 	tracker := activity.NewTracker()
 	for _, block := range blocks {
 		tracker.UpdateActivity(block)
 	}
 
-	topAddresses := tracker.GetTopAddresses(5)
-	log.Println("Top 5 active addresses for last 100 blocks:")
+	topAddresses := tracker.GetTopAddresses(topCount)
+	fmt.Printf("Top %d active addresses for last %d blocks:\n", topCount, blocksCount)
 	for i, address := range topAddresses {
-		log.Printf("%d. Address: %s, Activity: %d\n", i+1, address.Address, address.Activity)
+		fmt.Printf("%d. Address: %s, Activity: %d\n", i+1, address.Address, address.Activity)
 	}
 }

@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"go-eth-activity-tracker/internal/model"
-	"log"
 	"sort"
 	"strings"
 )
@@ -43,7 +42,6 @@ func (t *Tracker) UpdateActivity(block model.Block) {
 }
 
 func (t *Tracker) GetTopAddresses(count int) []AddressActivity {
-	log.Println("Calculating top addresses for last 100 blocks...")
 	var addrActivities []AddressActivity
 	for addr, activity := range t.activities {
 		addrActivities = append(addrActivities, AddressActivity{Address: addr, Activity: activity})
