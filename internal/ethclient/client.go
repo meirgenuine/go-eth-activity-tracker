@@ -6,36 +6,79 @@ import (
 	"fmt"
 	"go-eth-activity-tracker/internal/model"
 	"io"
+	"log"
 	"math/big"
 	"net/http"
+	"sync"
+	"time"
+)
+
+const (
+	maxRetries   = 3
+	retryTimeout = 2 * time.Second
 )
 
 type Client struct {
 	accessToken string
 	baseURL     string
+	rateLimiter *time.Ticker
 }
 
 func NewClient(accessToken string) *Client {
 	return &Client{
 		accessToken: accessToken,
 		baseURL:     "https://go.getblock.io/" + accessToken + "/",
+		rateLimiter: time.NewTicker(time.Second / 60), // 60 requests per second to not exceed getblock.io account limits
 	}
 }
 
+func (c *Client) Stop() {
+	c.rateLimiter.Stop()
+}
+
 func (c *Client) GetLatestBlocks(count int) ([]model.Block, error) {
+	log.Println("Retrieving latest 100 blocks...")
 	latestBlockNumber, err := c.getLatestBlockNumber()
 	if err != nil {
 		return nil, err
 	}
 
-	var blocks []model.Block
+	blocks := make([]model.Block, count)
+	errChan := make(chan error, count)
+	var wg sync.WaitGroup
+
 	for i := 0; i < count; i++ {
-		blockNumber := new(big.Int).Sub(latestBlockNumber, big.NewInt(int64(i)))
-		block, err := c.getBlockByNumber(blockNumber)
+		i := i
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			retryCount := 0
+			for {
+				blockNumber := new(big.Int).Sub(latestBlockNumber, big.NewInt(int64(i)))
+				block, err := c.getBlockByNumber(blockNumber)
+				if err != nil {
+					if retryCount < maxRetries {
+						retryCount++
+						time.Sleep(retryTimeout)
+						continue
+					}
+					errChan <- err
+					return
+				}
+				blocks[i] = block
+				break
+			}
+		}(i)
+	}
+
+	wg.Wait()
+	close(errChan)
+
+	// Check for errors
+	for err := range errChan {
 		if err != nil {
 			return nil, err
 		}
-		blocks = append(blocks, block)
 	}
 
 	return blocks, nil
@@ -92,6 +135,8 @@ func (c *Client) getBlockByNumber(blockNumber *big.Int) (model.Block, error) {
 }
 
 func (c *Client) sendRequest(method string, params []interface{}) ([]byte, error) {
+	<-c.rateLimiter.C // Wait for the next tick before proceeding
+
 	requestBody, err := json.Marshal(map[string]interface{}{
 		"jsonrpc": "2.0",
 		"method":  method,

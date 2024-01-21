@@ -14,6 +14,7 @@ func main() {
 	}
 
 	client := ethclient.NewClient(accessToken)
+	defer client.Stop() // to release ticker
 	blocks, err := client.GetLatestBlocks(100)
 	if err != nil {
 		log.Fatal(err)
