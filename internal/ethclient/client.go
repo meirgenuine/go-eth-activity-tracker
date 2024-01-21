@@ -72,7 +72,6 @@ func (c *Client) GetLatestBlocks(count int) ([]model.Block, error) {
 	wg.Wait()
 	close(errChan)
 
-	// Check for errors
 	for err := range errChan {
 		if err != nil {
 			return nil, err

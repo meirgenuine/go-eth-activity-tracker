@@ -21,6 +21,7 @@ func main() {
 
 	client := ethclient.NewClient(accessToken)
 	defer client.Stop() // to release ticker
+
 	log.Printf("Retrieving latest %d blocks...\n", blocksCount)
 	blocks, err := client.GetLatestBlocks(blocksCount)
 	if err != nil {
@@ -35,6 +36,7 @@ func main() {
 
 	topAddresses := tracker.GetTopAddresses(topCount)
 	fmt.Printf("Top %d active addresses for last %d blocks:\n", topCount, blocksCount)
+
 	for i, address := range topAddresses {
 		fmt.Printf("%d. Address: %s, Activity: %d\n", i+1, address.Address, address.Activity)
 	}
